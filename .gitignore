@@ -12,3 +12,4 @@ build/
 
 #general
 *.class
+/src/main/scala/Redis_DB.scala
