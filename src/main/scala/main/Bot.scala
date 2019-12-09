@@ -25,6 +25,6 @@ class Bot extends TelegramLongPollingBot {
   override def getBotUsername: String = "GreatNewsBot"
 
   override def getBotToken: String =
-    "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
+    ""
 
 }
