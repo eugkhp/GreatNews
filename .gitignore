@@ -12,3 +12,6 @@ build/
 
 #general
 *.class
+
+#tdlib
+tdlib/
