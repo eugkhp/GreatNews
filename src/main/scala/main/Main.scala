@@ -13,14 +13,13 @@ object Main extends App {
   // needs to be added to VM options
   //class Example - is the example of usage
   val logger = Logger("Main")
+  ApiContextInitializer.init()
 
+  val arguments = Array[String]()
   Example.main(arguments)
 
   val bot = new Bot()
-  ApiContextInitializer.init()
   val botsApi = new TelegramBotsApi()
-  val arguments = Array[String]()
-
   try botsApi.registerBot(bot)
   catch {
     case ex: TelegramApiRequestException =>
