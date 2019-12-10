@@ -4,7 +4,6 @@ import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.util.concurrent.locks.{Condition, Lock, ReentrantLock}
 
 import com.typesafe.scalalogging.Logger
-import org.drinkless.tdlib.Client.{ExceptionHandler, ResultHandler}
 import org.drinkless.tdlib.example.Example
 import org.drinkless.tdlib.{Client, TdApi}
 
@@ -97,7 +96,7 @@ class TdApi {
       case TdApi.AuthorizationStateClosed.CONSTRUCTOR =>
         print("Closed")
         if (!quiting)
-          client = Client.create(resultHandler, null, defHandler) // recreate client after previous has closed
+          client = Client.create(new UpdatesHandler(), null, new DefaultHandler) // recreate client after previous has closed
 
       case _ =>
         System.err.println(
@@ -106,10 +105,17 @@ class TdApi {
     }
   }
 
-  val resultHandler: ResultHandler = (res: TdApi.Object) =>
-    logger.info(res.toString)
-  val defHandler: ExceptionHandler = (res: TdApi.Object) =>
-    logger.info(res.toString)
+  class DefaultHandler extends Client.ExceptionHandler {
+    override def onException(e: Throwable): Unit = {
+      print(e.getCause)
+    }
+  }
+
+  class UpdatesHandler extends Client.ResultHandler {
+    override def onResult(`object`: TdApi.Object): Unit = {
+      logger.info(`object`.toString)
+    }
+  }
 
   def promptString(prompt: String): String = {
     print(prompt)

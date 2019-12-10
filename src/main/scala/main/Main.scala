@@ -11,12 +11,12 @@ object Main extends App {
   //to call tdlib Api
   // -Djava.library.path=<absolute path to these sources>/src/main/java/org/drinkless/tdlib/example
   // needs to be added to VM options
-
   //class Example - is the example of usage
-  Example.main(arguments)
-  val bot = new Bot()
-
   val logger = Logger("Main")
+
+  Example.main(arguments)
+
+  val bot = new Bot()
   ApiContextInitializer.init()
   val botsApi = new TelegramBotsApi()
   val arguments = Array[String]()
