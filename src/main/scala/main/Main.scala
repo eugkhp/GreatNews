@@ -1,7 +1,7 @@
 package main
 
 import com.typesafe.scalalogging.Logger
-import org.drinkless.tdlib.example.Example
+import main.tdapi.TgApi
 import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
@@ -16,7 +16,7 @@ object Main extends App {
   ApiContextInitializer.init()
 
   val arguments = Array[String]()
-  Example.main(arguments)
+  TgApi.main(arguments)
 
   val bot = new Bot()
   val botsApi = new TelegramBotsApi()
