@@ -1,7 +1,6 @@
 package main
 
 import com.typesafe.scalalogging.Logger
-import main.tdapi.Telegram
 import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
