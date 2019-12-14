@@ -1,7 +1,7 @@
 package main
 
 import com.typesafe.scalalogging.Logger
-import main.tdapi.TgApi
+import main.tdapi.Telegram
 import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
@@ -14,9 +14,6 @@ object Main extends App {
   //class Example - is the example of usage
   val logger = Logger("Main")
   ApiContextInitializer.init()
-
-  val arguments = Array[String]()
-  TgApi.main(arguments)
 
   val bot = new Bot()
   val botsApi = new TelegramBotsApi()
