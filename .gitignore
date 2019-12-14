@@ -15,3 +15,5 @@ build/
 
 #tdlib
 tdlib/
+
+/src/main/scala/Redis_DB.scala
