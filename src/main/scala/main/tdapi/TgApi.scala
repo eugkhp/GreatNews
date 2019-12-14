@@ -27,14 +27,13 @@ object TgApi {
   /**
     * Get Messages from the Channel(or Chat) by Id.
     *
-    * @param channelId     id of the channel you want to get messages from.
-    * @param fromMessageId Id of the message last message you want go get in your result.
+    * @param channelId     Id of the channel you want to get messages from.
+    * @param fromMessageId Id of the starting point message(to select older or/and newer messages use 'offset' and 'count').
     *                      Put 0 if you want to get last message only (offset and count will not affect result).
-    *                      To get more than only last message specify 'fromMessageId',
-    *                      than with offset and count you can get channel history.
-    * @param offset        Always should be negative. If specified you  get specified number of newer messages from 'fromMessageId'.
-    * @param count         Max number of returned messages if offset <> 0, than 'count' > '-offset'. To get past messages should be > 0.
-    *                      (if 'fromMessageId' <> 0)
+    *                      To get more than only last message specify 'fromMessageId', than with offset and count you can get channel history.
+    * @param offset        Always should be negative. If < 0  you get specified number of newer messages from 'fromMessageId'.
+    * @param count         Max number of returned messages if offset < 0, than 'count' > '-offset'. To get past messages 'count' should be > 0.
+    *                      (if 'fromMessageId' not 0)
     * @return Array of messages.
     */
   def getLastMessagesOfChannel(channelId: Long,
