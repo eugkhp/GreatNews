@@ -3,7 +3,12 @@ package main.tdapi
 import java.io.{BufferedReader, IOError, IOException, InputStreamReader}
 import java.util.concurrent.locks.{Condition, Lock, ReentrantLock}
 
+import org.drinkless.tdlib.TdApi.Message
 import org.drinkless.tdlib.{Client, TdApi}
+
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 object TgApi {
   val defaultHandler: Client.ResultHandler = new TgApi.DefaultHandler
@@ -17,6 +22,9 @@ object TgApi {
   var haveAuthorization: Boolean = false
   var quiting: Boolean = false
   var currentPrompt: String = _
+  val channelsIds: ListBuffer[Long] = ListBuffer()
+  val messages: mutable.HashMap[Long, List[Message]] =
+    new mutable.HashMap[Long, List[Message]]()
 
   try try System.loadLibrary("tdjni")
   catch {
@@ -147,12 +155,30 @@ object TgApi {
     client = Client.create(new TgApi.UpdatesHandler, null, null)
     Thread.sleep(2000) //wait for auth
     client.send(new TdApi.GetMe, defaultHandler)
+    val rememberHandler = new RememberChannel
+    client.send(new TdApi.SearchPublicChat("@vas3k_channel"), rememberHandler)
+    client.send(new TdApi.SearchPublicChat("@hoolinomics"), rememberHandler)
+    Thread.sleep(2000)
+    println(channelsIds.toList)
+    client.send(
+      new TdApi.GetChatHistory(channelsIds.head, 0, -7, 10, false),
+      defaultHandler
+    )
 
   }
 
   class DefaultHandler extends Client.ResultHandler {
     override def onResult(obj: TdApi.Object): Unit = {
       print(obj.toString)
+    }
+  }
+
+  class RememberChannel extends Client.ResultHandler {
+    override def onResult(obj: TdApi.Object): Unit = {
+      print(obj.toString)
+      obj match {
+        case chat: TdApi.Chat => channelsIds.addOne(chat.id)
+      }
     }
   }
 
