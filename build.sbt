@@ -10,5 +10,3 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.typelevel" %% "cats-effect" % "2.0.0"
 libraryDependencies += "dev.zio" %% "zio" % "1.0.0-RC17"
 libraryDependencies += "net.debasishg" %% "redisclient" % "3.20"
-// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-libraryDependencies += "org.slf4j" % "slf4j-api" % "2.0.0-alpha1"

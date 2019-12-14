@@ -20,15 +20,25 @@ object TgLogin {
   var quiting: Boolean = false
   var currentPrompt: String = _
 
-  Client.execute(new TdApi.SetLogVerbosityLevel(0))
-  if (Client
-        .execute(
-          new TdApi.SetLogStream(new TdApi.LogStreamFile("tdlib.log", 1 << 27))
-        )
-        .isInstanceOf[TdApi.Error])
-    throw new IOError(
-      new IOException("Write access to the current directory is required")
+  def init(): Client = {
+    Client.execute(new TdApi.SetLogVerbosityLevel(0))
+    if (Client
+          .execute(
+            new TdApi.SetLogStream(
+              new TdApi.LogStreamFile("tdlib.log", 1 << 27)
+            )
+          )
+          .isInstanceOf[TdApi.Error])
+      throw new IOError(
+        new IOException("Write access to the current directory is required")
+      )
+    client = Client.create(
+      new Handlers.UpdatesHandler,
+      new Handlers.PrintHandler,
+      new Handlers.PrintHandler
     )
+    client
+  }
 
   def onAuthorizationStateUpdated(
     authorizationState: TdApi.AuthorizationState
@@ -37,15 +47,15 @@ object TgLogin {
       TgLogin.authorizationState = authorizationState
     TgLogin.authorizationState.getConstructor match {
       case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR =>
-        val parameters: TdApi.TdlibParameters = new TdApi.TdlibParameters
+        val parameters = new TdApi.TdlibParameters
         parameters.databaseDirectory = "tdlib"
         parameters.useMessageDatabase = true
         parameters.useSecretChats = true
-        parameters.apiId = 94575
-        parameters.apiHash = "a3406de8d171bb422bb6ddf3bbd800e2"
+        parameters.apiId = 1157399
+        parameters.apiHash = "50563ed845128e3e34c2d01f3a9ffc86"
         parameters.systemLanguageCode = "en"
         parameters.deviceModel = "Desktop"
-        parameters.systemVersion = "Unknown"
+        parameters.systemVersion = "19.04"
         parameters.applicationVersion = "1.0"
         parameters.enableStorageOptimizer = true
         client.send(
@@ -60,29 +70,29 @@ object TgLogin {
         )
 
       case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR =>
-        val phoneNumber: String = promptString("Please enter phone number: ")
+        val phoneNumber = promptString("Please enter phone number: ")
         client.send(
           new TdApi.SetAuthenticationPhoneNumber(phoneNumber, null),
           new Handlers.AuthorizationRequestHandler
         )
 
       case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR =>
-        val code: String = promptString("Please enter authentication code: ")
+        val code = promptString("Please enter authentication code: ")
         client.send(
           new TdApi.CheckAuthenticationCode(code),
           new Handlers.AuthorizationRequestHandler
         )
 
       case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR =>
-        val firstName: String = promptString("Please enter your first name: ")
-        val lastName: String = promptString("Please enter your last name: ")
+        val firstName = promptString("Please enter your first name: ")
+        val lastName = promptString("Please enter your last name: ")
         client.send(
           new TdApi.RegisterUser(firstName, lastName),
           new Handlers.AuthorizationRequestHandler
         )
 
       case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR =>
-        val password: String = promptString("Please enter password: ")
+        val password = promptString("Please enter password: ")
         client.send(
           new TdApi.CheckAuthenticationPassword(password),
           new Handlers.AuthorizationRequestHandler

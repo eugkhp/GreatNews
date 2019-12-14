@@ -9,9 +9,9 @@ package org.drinkless.tdlib.example;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
+import java.io.BufferedReader;
 import java.io.IOError;
 import java.io.IOException;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -63,7 +63,7 @@ public final class Example {
 
     public static void print(String str) {
         if (currentPrompt != null) {
-            System.out.println("");
+            System.out.println();
         }
         System.out.println(str);
         if (currentPrompt != null) {
@@ -292,7 +292,7 @@ public final class Example {
         client.send(new TdApi.SendMessage(chatId, 0, false, false, replyMarkup, content), defaultHandler);
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main() throws InterruptedException {
         // disable TDLib log
         Client.execute(new TdApi.SetLogVerbosityLevel(0));
         if (Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamFile("tdlib.log", 1 << 27))) instanceof TdApi.Error) {

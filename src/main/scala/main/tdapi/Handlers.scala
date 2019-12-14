@@ -1,6 +1,5 @@
 package main.tdapi
 
-import cats.effect.concurrent.MVar
 import cats.effect.{ContextShift, IO}
 import com.typesafe.scalalogging.Logger
 import main.tdapi.TgLogin.onAuthorizationStateUpdated
@@ -14,16 +13,20 @@ object Handlers {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   class DefaultHandler[A] extends Client.ResultHandler {
-    val response: IO[MVar[IO, A]] = MVar.empty[IO, A]
+    @volatile
+    var response: A = _
+
     override def onResult(obj: TdApi.Object): Unit = {
       logger.info(obj.toString)
       obj match {
-        case obj: A => response.flatMap(_.put(obj))
+        case obj: A => response = obj
         case _      => logger.error("Wrong expected type")
       }
     }
+
     def getResponse: A = {
-      response.flatMap(_.take).unsafeRunSync()
+      while (response == null) {}
+      response
     }
   }
 
@@ -31,14 +34,14 @@ object Handlers {
     override def onResult(obj: TdApi.Object): Unit = {
       obj.getConstructor match {
         case TdApi.Error.CONSTRUCTOR =>
-          System.err.println("Receive an error:" + "\n" + obj)
+          logger.error("Receive an error:" + "\n" + obj)
           onAuthorizationStateUpdated(null) // repeat last action
 
         case TdApi.Ok.CONSTRUCTOR =>
         // result is already received through UpdateAuthorizationState, nothing to do
 
         case _ =>
-          System.err.println("Receive wrong response from TDLib:" + "\n" + obj)
+          logger.error("Receive wrong response from TDLib:" + "\n" + obj)
       }
     }
   }
@@ -57,4 +60,14 @@ object Handlers {
       }
     }
   }
+
+  class PrintHandler extends Client.ExceptionHandler with Client.ResultHandler {
+    override def onException(e: Throwable): Unit =
+      logger.error(e.getCause.getMessage, e.getMessage)
+
+    override def onResult(obj: TdApi.Object): Unit = {
+      logger.info(obj.toString)
+    }
+  }
+
 }
