@@ -8,8 +8,8 @@ import org.telegram.telegrambots.meta.api.objects.{Message, Update}
 import scala.util.matching.Regex
 
 object regex {
-  val addSubscribe: Regex = "/add\\shttps://t.me/(\\w+)".r
-  val deleteSubscribe: Regex = "/delete\\s(\\w+)".r
+  val addSubscribe: Regex = "/add\\shttps://t.me/([A-Za-z0-9]+)".r
+  val deleteSubscribe: Regex = "/delete\\s([A-Za-z0-9]+)".r
   val deleteAllSubscribes: Regex = "/deleteall".r
   val showSubscribes: Regex = "/show".r
   val info: Regex = "info".r
@@ -71,7 +71,6 @@ class Bot extends TelegramLongPollingBot {
   }
 
   def deleteChannel(ID: Int, channel: String): Boolean = {
-    //    println("deleteChannel")
     redis_DB.set(
       ID.toString,
       redis_DB
@@ -85,8 +84,6 @@ class Bot extends TelegramLongPollingBot {
   }
 
   def addSubscribe(ID: Int, channel: String): AnyVal = {
-    //    println("addSubscribe")
-    //    println(redis_DB.get(ID.toString).getOrElse(""))
     if (!showSubscribes(ID).contains(channel)) {
       redis_DB.set(
         ID.toString,
@@ -97,8 +94,6 @@ class Bot extends TelegramLongPollingBot {
   }
 
   def showSubscribes(ID: Int): String = {
-    //    println("showSubscribes")
-    //    println(redis_DB.get(ID.toString).getOrElse(""))
     redis_DB.get(ID.toString).getOrElse("")
 
   }
@@ -117,5 +112,5 @@ class Bot extends TelegramLongPollingBot {
   override def getBotUsername: String = "GreatNews"
 
   override def getBotToken: String =
-    "1003839370:AAE9GDOjmlefiA4r_yE9HFyrHfnVe7GwCLg"
+    "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
 }
