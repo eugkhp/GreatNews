@@ -12,6 +12,7 @@ object Main extends App {
   //to call tdlib Api
   // -Djava.library.path=<absolute path to these sources>/src/main/java/org/drinkless/tdlib/example
   // needs to be added to VM options
+
   val logger = Logger("Main")
 
   TgApi.init()
