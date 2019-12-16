@@ -47,4 +47,10 @@ object TgApi {
     )
     handler.getResponse
   }
+
+  def getChatInfoById(chatId: Long): Chat = {
+    val handler = new Handlers.DefaultHandler[Chat]
+    client.send(new TdApi.GetChat(chatId), handler)
+    handler.getResponse
+  }
 }
