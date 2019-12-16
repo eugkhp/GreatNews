@@ -145,7 +145,7 @@ class Bot extends TelegramLongPollingBot {
                   subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
                     val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
                     RedirectedMessage.setChatId(chatIdToRedirect)
-                    println(RedirectedMessage)
+                    //println(RedirectedMessage)
                     execute[Message, SendMessage](RedirectedMessage)
                   }
               }
