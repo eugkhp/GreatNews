@@ -52,7 +52,7 @@ class Bot extends TelegramLongPollingBot {
             "Your subscriptions" + "\n" + showSubscribes(chatIdToWorkWith)
           )
         case regex.slashInfo() =>
-          message.setText(AllComands)
+          message.setText(AllCommands)
         case _ =>
           message.setText("Unknown comand")
       }
@@ -74,7 +74,7 @@ class Bot extends TelegramLongPollingBot {
 
   def deleteChannel(channelId: Long, chatIdToRemove: Long): Boolean = ???
 
-  def AllComands: String =
+  def AllCommands: String =
     "/add channel_link - add channel_link to your subscribes" + "\n\n" +
       "/delete channel_link - delete channel_name from your subscribes" + "\n\n" +
       "/delete all - delete all subscribes" + "\n\n" +
