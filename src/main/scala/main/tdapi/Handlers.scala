@@ -56,7 +56,7 @@ object Handlers {
               .authorizationState
           )
         case _ =>
-        // print("Unsupported update:" + "\n" + object);
+        //print("Unsupported update:" + "\n" + obj);
       }
     }
   }

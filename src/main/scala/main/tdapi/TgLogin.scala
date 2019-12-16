@@ -12,8 +12,6 @@ object TgLogin {
   val defaultHandler: Client.ResultHandler = new Handlers.DefaultHandler
   val authorizationLock: Lock = new ReentrantLock
   val gotAuthorization: Condition = authorizationLock.newCondition
-  val commandsLine: String =
-    "Enter command (gcs - GetChats, gc <chatId> - GetChat, me - GetMe, sm <chatId> <message> - SendMessage, lo - LogOut, q - Quit): "
   var client: Client = _
   var authorizationState: TdApi.AuthorizationState = _
   var haveAuthorization: Boolean = false

@@ -15,16 +15,17 @@ object Main extends App {
   val logger = Logger("Main")
 
   TgApi.init()
-  ApiContextInitializer.init()
+  Thread.sleep(3000) // waiting for client authorization
 
   //example of usage
-  private val chat: TdApi.Chat = TgApi.findChannelByName("@vas3k_channel")
+  private val chat: TdApi.Chat = TgApi.findChannelByName("vas3k_channel")
   private val id: Long = chat.id
   println(id)
   private val messages: TdApi.Messages =
     TgApi.getLastMessagesOfChannel(id, 727711744, 0, 3)
   println(messages.totalCount)
 
+  ApiContextInitializer.init()
   val bot = new Bot()
   val botsApi = new TelegramBotsApi()
   try botsApi.registerBot(bot)
