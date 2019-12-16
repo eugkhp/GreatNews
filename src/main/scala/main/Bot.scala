@@ -87,13 +87,19 @@ class Bot extends TelegramLongPollingBot {
     "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
 
   def ChannelsByPass(): Unit = {
-    redis_DB.keys().foreach{ key =>
-      val value = redis_DB.get(key)
-      println(value)
+    val channels = redis_DB.keys()
+    if (channels.isDefined) {
+      channels.get.map{ key =>
+        println(key)
+      // value =
+        redis_DB.lrange(key.getOrElse(""), 0, 100000).foreach(println)
+      //val lastMessage = value.head.
+      //println(value)
 //      val message = new SendMessage()
 //      message.setChatId(value.getOrElse(""))
 //      message.setText("hello")
 //      sendApiMethod[Message, SendMessage](message)
+    }
     }
     Thread.sleep(3000)
   }
