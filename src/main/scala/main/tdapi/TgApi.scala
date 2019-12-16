@@ -47,4 +47,8 @@ object TgApi {
     )
     handler.getResponse
   }
+
+  def getMessageById(id: String) = {
+    
+  }
 }

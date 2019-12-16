@@ -54,7 +54,7 @@ class Bot extends TelegramLongPollingBot {
         case regex.slashInfo() =>
           message.setText(AllCommands)
         case _ =>
-          message.setText("Unknown comand")
+          message.setText("Unknown command")
       }
       sendApiMethod[Message, SendMessage](message)
     }
@@ -90,16 +90,28 @@ class Bot extends TelegramLongPollingBot {
     val channels = redis_DB.keys()
     if (channels.isDefined) {
       channels.get.map{ key =>
-        println(key)
-      // value =
-        redis_DB.lrange(key.getOrElse(""), 0, 100000).foreach(println)
-      //val lastMessage = value.head.
-      //println(value)
-//      val message = new SendMessage()
-//      message.setChatId(value.getOrElse(""))
-//      message.setText("hello")
-//      sendApiMethod[Message, SendMessage](message)
-    }
+        val chatSubscriberInfo = redis_DB.lrange(key.getOrElse(""), 0, 100000).last
+        val lastGotMessageId = chatSubscriberInfo.last.get
+        val lastMessageId: String = ""
+        if(!lastGotMessageId.equals(lastMessageId)) {
+          chatSubscriberInfo.map { chatIdToRedirectOpt =>
+            val chatIdToRedirect = chatIdToRedirectOpt.get
+            val message = new SendMessage()
+            message.setChatId(chatIdToRedirect)
+            message.setText("wjekbgfjoeankm")
+            println(message)
+            message
+          }
+        }
+
+        //val lastMessage = value.head.
+        //println(value)
+        //      val message = new SendMessage()
+        //      message.setChatId(value.getOrElse(""))
+        //      message.setText("hello")
+        //      sendApiMethod[Message, SendMessage](message)
+        chatSubscriberInfo
+      }
     }
     Thread.sleep(3000)
   }
