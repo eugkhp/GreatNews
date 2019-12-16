@@ -15,9 +15,6 @@ object Main extends App {
 
   val logger = Logger("Main")
 
-  TgApi.init()
-  Thread.sleep(3000) // waiting for client authorization
-
   //example of usage
   private val chat: TdApi.Chat = TgApi.findChannelByName("vas3k_channel")
   private val id: Long = chat.id
