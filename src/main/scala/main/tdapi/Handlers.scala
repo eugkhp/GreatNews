@@ -17,7 +17,7 @@ object Handlers {
     var response: A = _
 
     override def onResult(obj: TdApi.Object): Unit = {
-      logger.info(obj.toString)
+      //println(obj) for debug
       obj match {
         case obj: A => response = obj
         case _      => logger.error("Wrong expected type")

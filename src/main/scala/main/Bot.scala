@@ -29,7 +29,7 @@ class Bot extends TelegramLongPollingBot {
   val subscriptionsToRemove = new LinkedTransferQueue[(Long, Long)]
 
   //  docker run -p:6379:6379 redis
-  val channelsToChats = new RedisClient("localhost", 6379)
+  val channelsToSubscribers = new RedisClient("localhost", 6379)
   //  docker run -p:6380:6379 redis
   val subscribersToChannels = new RedisClient("localhost", 6380)
 
@@ -54,24 +54,24 @@ class Bot extends TelegramLongPollingBot {
 
         case regex.showSubscribes() =>
           message.setText(
-            "Your subscriptions" + "\n" //+ showSubscriptions(subscriberId)
+            "Your subscriptions" + "\n" + showSubscriptions(subscriberId)
           )
         case regex.slashInfo() =>
           message.setText(AllCommands)
         case _ =>
           message.setText("Unknown command")
       }
-      sendApiMethod[Message, SendMessage](message)
+      execute[Message, SendMessage](message)
     }
 
   }
 
   def addSubscription(channel: Chat, subscriberId: Long): Unit = {
-    if (channelsToChats.exists(channel.id)) {
-      channelsToChats.rpush(channel.id, subscriberId)
+    if (channelsToSubscribers.exists(channel.id)) {
+      channelsToSubscribers.rpush(channel.id, subscriberId)
     } else {
-      channelsToChats.rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
-      channelsToChats.rpush(channel.id, subscriberId)
+      channelsToSubscribers.rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
+      channelsToSubscribers.rpush(channel.id, subscriberId)
     }
     subscribersToChannels.sadd(subscriberId, channel.id)
   }
@@ -116,28 +116,41 @@ class Bot extends TelegramLongPollingBot {
     "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
 
   def ChannelsByPass(): Unit = {
-    val channels = channelsToChats.keys()
+    val channels = channelsToSubscribers.keys()
     if (channels.isDefined) {
       channels.get.foreach { chatId =>
-        val channelSubscribersInfo = channelsToChats.lrange(chatId.getOrElse(""), 0, 100000).last
-        val lastGotMessageId = channelSubscribersInfo.head.get.toLong
-        val lastChatMessageId = TgApi.getChatInfoById(chatId.get.toLong).lastMessage.id
-        println(lastChatMessageId, lastGotMessageId)
-        if (lastGotMessageId != lastChatMessageId) {
-          TgApi.getLastMessagesOfChannel(chatId.get.toLong, lastGotMessageId, -99, 100).messages.foreach { message =>
-            message.content match {
-              case content: MessageText =>
-                val RedirectedMessage = new SendMessage()
-                RedirectedMessage.setText(content.text.text)
-                channelSubscribersInfo.drop(1).foreach {
-                  chatIdToRedirectOpt =>
+        val subscribersIds =
+          channelsToSubscribers.lrange(chatId.getOrElse(""), 0, -1).get
+        val lastViewedMessageId = subscribersIds.head.get.toLong
+        val newMessages =
+          TgApi.getLastMessagesOfChannel(
+            chatId.get.toLong,
+            lastViewedMessageId,
+            -99,
+            99
+          )
+        if (newMessages.messages.head.id != lastViewedMessageId) {
+          channelsToSubscribers.lset(
+            chatId.get,
+            0,
+            newMessages.messages.head.id
+          )
+          newMessages.messages
+            .dropRight(1)
+            .foreach { message =>
+              message.content match {
+                case content: MessageText =>
+                  val RedirectedMessage = new SendMessage()
+                  RedirectedMessage.setText(content.text.text)
+                  subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
                     val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
                     RedirectedMessage.setChatId(chatIdToRedirect)
                     println(RedirectedMessage)
-                    sendApiMethod[Message, SendMessage](RedirectedMessage)
-                }
+                    execute[Message, SendMessage](RedirectedMessage)
+                  }
+              }
             }
-          }
+
         }
       }
     }

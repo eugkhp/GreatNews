@@ -20,7 +20,7 @@ object Main extends App {
   private val id: Long = chat.id
   println(id)
   private val messages: TdApi.Messages =
-    TgApi.getLastMessagesOfChannel(id, 727711744, 0, 3)
+    TgApi.getLastMessagesOfChannel(-1001432529613L, 0, 0, 99)
   println(messages.totalCount)
 
   ApiContextInitializer.init()
@@ -34,7 +34,7 @@ object Main extends App {
   }
   logger.info("Bot Started")
 
-  while(true) {
+  while (true) {
     bot.ChannelsByPass()
   }
 }
