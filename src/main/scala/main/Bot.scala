@@ -1,6 +1,7 @@
 package main
 
 import com.redis.RedisClient
+import main.tdapi.TgApi
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update}
@@ -113,4 +114,16 @@ class Bot extends TelegramLongPollingBot {
 
   override def getBotToken: String =
     "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
+
+  def ChannelsByPass(): Unit = {
+    redis_DB.keys().foreach{ key =>
+      val value = redis_DB.get(key)
+      println(value)
+//      val message = new SendMessage()
+//      message.setChatId(value.getOrElse(""))
+//      message.setText("hello")
+//      sendApiMethod[Message, SendMessage](message)
+    }
+    Thread.sleep(3000)
+  }
 }

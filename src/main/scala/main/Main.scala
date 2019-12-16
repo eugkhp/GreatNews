@@ -36,4 +36,7 @@ object Main extends App {
   }
   logger.info("Bot Started")
 
+  while(true) {
+    bot.ChannelsByPass()
+  }
 }
