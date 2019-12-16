@@ -12,10 +12,10 @@ object TgApi {
       e.printStackTrace()
   }
 
-  var client: Client = _
-
-  def init(): Unit = {
-    client = TgLogin.init()
+  var client: Client = {
+    val c = TgLogin.init()
+    Thread.sleep(3000) // waiting for client authorization
+    c
   }
 
   def findChannelByName(channelName: String): Chat = {
