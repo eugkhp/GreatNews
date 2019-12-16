@@ -48,7 +48,13 @@ object TgApi {
     handler.getResponse
   }
 
-  def getMessageById(id: String) = {
-    
+  def getChatInfoById(chatId: Long): Chat = {
+    val handler = new Handlers.DefaultHandler[Chat]
+    client.send(new TdApi.GetChat(chatId), handler)
+    handler.getResponse
+  }
+
+  def getMessageById(channelId: Long, messageId: Long): Messages = {
+    getLastMessagesOfChannel(channelId, messageId, 0 ,1)
   }
 }
