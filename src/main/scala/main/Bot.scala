@@ -25,9 +25,6 @@ class Bot extends TelegramLongPollingBot {
 
   val logger: Logger = Logger("Command handler")
 
-  // (channelId, subscriberId)
-  val subscriptionsToRemove = new LinkedTransferQueue[(Long, Long)]
-
   //  docker run -p:6379:6379 redis
   val channelsToSubscribers = new RedisClient("localhost", 6379)
   //  docker run -p:6380:6379 redis
@@ -94,13 +91,14 @@ class Bot extends TelegramLongPollingBot {
   }
 
   def deleteChannel(channelIdToRemove: Long, subscriberId: Long): String = {
-    subscribersToChannels.srem(subscriberId, channelIdToRemove) match {
+    channelsToSubscribers.lrem(channelIdToRemove, -1, subscriberId) match {
+      case Some(0) => "You didn't have such channel"
       case Some(_) =>
-        subscriptionsToRemove.add((channelIdToRemove, subscriberId))
+        if (channelsToSubscribers.llen(channelIdToRemove).get == 1)
+          channelsToSubscribers.lpop(channelIdToRemove)
+        subscribersToChannels.srem(subscriberId, channelIdToRemove)
         "Channel removed"
-      case None => "No such channel"
-      case Some(0) =>
-        "No such channel" // хз что там возвращается(None или 0) если ничего не находит
+      case None => "You didn't have such channel"
     }
   }
 
@@ -145,7 +143,6 @@ class Bot extends TelegramLongPollingBot {
                   subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
                     val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
                     RedirectedMessage.setChatId(chatIdToRedirect)
-                    //println(RedirectedMessage)
                     execute[Message, SendMessage](RedirectedMessage)
                   }
               }
