@@ -1,10 +1,14 @@
 package main.bot
 
 import main.tdapi.TgApi
-import org.drinkless.tdlib.TdApi.Chat
+import org.drinkless.tdlib.TdApi
+import org.drinkless.tdlib.TdApi.{Chat, MessageText}
+import org.telegram.telegrambots.bots.TelegramLongPollingBot
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.objects.Message
 import params._
 
-trait BotHelper {
+trait BotHelper extends TelegramLongPollingBot {
 
   def addSubscription(channel: Chat, subscriberId: Long): Unit = {
     if (config.channelsToSubscribers.exists(channel.id)) {
@@ -45,6 +49,22 @@ trait BotHelper {
       case None => "You didn't have such channel"
     }
   }
+
+  def getNewMessages(chatId: Long, lastViewedMessageId: Long): TdApi.Messages =
+    TgApi.getLastMessagesOfChannel(chatId, lastViewedMessageId, -99, 99)
+
+
+  def redirectMessage(subscribersIds: Seq[Option[String]], chatName: String, messageContent: MessageText): Unit = {
+    val redirectedMessage = new SendMessage()
+    redirectedMessage.enableHtml(true)
+    redirectedMessage.setText("<strong>" + chatName + "</strong>\n" + messageContent.text.text)
+    subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
+      val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
+      redirectedMessage.setChatId(chatIdToRedirect)
+      execute[Message, SendMessage](redirectedMessage)
+    }
+  }
+
 
   def AllCommands: String =
     "/add channel_link - add channel_link to your subscribes" + "\n\n" +

@@ -3,15 +3,13 @@ package main.bot
 import com.redis.RedisClient
 import com.typesafe.scalalogging.Logger
 import main.tdapi.TgApi
-import org.drinkless.tdlib.TdApi.{Chat, MessageText}
-import org.telegram.telegrambots.bots.TelegramLongPollingBot
+import org.drinkless.tdlib.TdApi.MessageText
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update}
 import params._
 import regex._
 
-class Bot extends TelegramLongPollingBot
-  with BotHelper {
+class Bot extends BotHelper {
 
   val logger: Logger = Logger("Command handler")
 
@@ -60,13 +58,7 @@ class Bot extends TelegramLongPollingBot
         val subscribersIds =
           channelsToSubscribers.lrange(chatId.getOrElse(""), 0, -1).get
         val lastViewedMessageId = subscribersIds.head.get.toLong
-        val newMessages =
-          TgApi.getLastMessagesOfChannel(
-            chatId.get.toLong,
-            lastViewedMessageId,
-            -99,
-            99
-          )
+        val newMessages = getNewMessages(chatId.get.toLong, lastViewedMessageId)
         if (newMessages.messages.head.id != lastViewedMessageId) {
           channelsToSubscribers.lset(
             chatId.get,
@@ -78,16 +70,9 @@ class Bot extends TelegramLongPollingBot
             .foreach { message =>
               message.content match {
                 case content: MessageText =>
-                  val RedirectedMessage = new SendMessage()
-                  RedirectedMessage.setText(chatName + "\n" + content.text.text)
-                  subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
-                    val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
-                    RedirectedMessage.setChatId(chatIdToRedirect)
-                    execute[Message, SendMessage](RedirectedMessage)
-                  }
+                  redirectMessage(subscribersIds, chatName, content)
               }
             }
-
         }
       }
     }

@@ -14,7 +14,7 @@ object TgApi {
 
   var client: Client = {
     val c = TgLogin.init()
-    Thread.sleep(3000) // waiting for client authorization
+    Thread.sleep(2000) // waiting for client authorization
     c
   }
 
