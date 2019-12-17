@@ -1,6 +1,7 @@
 package main
 
 import com.typesafe.scalalogging.Logger
+import main.bot.Bot
 import main.tdapi.TgApi
 import org.drinkless.tdlib.TdApi
 import org.telegram.telegrambots.ApiContextInitializer

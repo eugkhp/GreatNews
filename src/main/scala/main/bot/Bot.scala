@@ -1,6 +1,4 @@
-package main
-
-import java.util.concurrent.LinkedTransferQueue
+package main.bot
 
 import com.redis.RedisClient
 import com.typesafe.scalalogging.Logger
@@ -9,26 +7,18 @@ import org.drinkless.tdlib.TdApi.{Chat, MessageText}
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update}
+import params._
+import regex._
 
-import scala.util.matching.Regex
-
-object regex {
-  val addSubscribe: Regex = "/add\\shttps://t.me/([a-zA-Z0-9-_]+)".r
-  val deleteSubscribe: Regex = "/delete\\shttps://t.me/([a-zA-Z0-9-_]+)".r
-  val deleteAllSubscribes: Regex = "/deleteall".r
-  val showSubscribes: Regex = "/show".r
-  val info: Regex = "info".r
-  val slashInfo: Regex = "/info".r
-}
-
-class Bot extends TelegramLongPollingBot {
+class Bot extends TelegramLongPollingBot
+  with BotHelper {
 
   val logger: Logger = Logger("Command handler")
 
   //  docker run -p:6379:6379 redis
-  val channelsToSubscribers = new RedisClient("localhost", 6379)
+  val channelsToSubscribers = new RedisClient(config.channelsToSubscribers.host, config.channelsToSubscribers.port)
   //  docker run -p:6380:6379 redis
-  val subscribersToChannels = new RedisClient("localhost", 6380)
+  val subscribersToChannels = new RedisClient(config.subscribersToChannels.host, config.channelsToSubscribers.port)
 
   override def onUpdateReceived(update: Update): Unit = {
     logger.info(
@@ -40,78 +30,27 @@ class Bot extends TelegramLongPollingBot {
       val subscriberId = update.getMessage.getChatId // id of the chat to respond
       message.setChatId(subscriberId)
       update.getMessage.getText match {
-        case regex.addSubscribe(some_channel) =>
+        case addSubscribe(some_channel) =>
           val channel = TgApi.findChannelByName(some_channel)
           addSubscription(channel, subscriberId)
           message.setText(s"You added $some_channel to your subscriptions")
 
-        case regex.deleteSubscribe(some_channel) =>
+        case deleteSubscribe(some_channel) =>
           deleteChannel(TgApi.findChannelByName(some_channel).id, subscriberId)
           message.setText(s"You deleted $some_channel from your subscriptions")
 
-        case regex.showSubscribes() =>
+        case showSubscribes() =>
           message.setText(
             "Your subscriptions" + "\n" + showSubscriptions(subscriberId)
           )
-        case regex.slashInfo() =>
+        case slashInfo() =>
           message.setText(AllCommands)
         case _ =>
           message.setText("Unknown command")
       }
       execute[Message, SendMessage](message)
     }
-
   }
-
-  def addSubscription(channel: Chat, subscriberId: Long): Unit = {
-    if (channelsToSubscribers.exists(channel.id)) {
-      channelsToSubscribers.rpush(channel.id, subscriberId)
-    } else {
-      channelsToSubscribers.rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
-      channelsToSubscribers.rpush(channel.id, subscriberId)
-    }
-    subscribersToChannels.sadd(subscriberId, channel.id)
-  }
-
-  def showSubscriptions(subscriberId: Long): String = {
-    var answer: StringBuilder = new StringBuilder
-    subscribersToChannels.smembers(subscriberId) match {
-      case Some(set) =>
-        set.foreach(v => {
-          v.map(_.toLong) match {
-            case Some(id) =>
-              answer.addAll(TgApi.getChatInfoById(id).title + "\n")
-          }
-        })
-      case None =>
-        answer = new StringBuilder
-        answer.addAll("No subscriptions")
-    }
-    answer.toString()
-  }
-
-  def deleteChannel(channelIdToRemove: Long, subscriberId: Long): String = {
-    channelsToSubscribers.lrem(channelIdToRemove, -1, subscriberId) match {
-      case Some(0) => "You didn't have such channel"
-      case Some(_) =>
-        if (channelsToSubscribers.llen(channelIdToRemove).get == 1)
-          channelsToSubscribers.lpop(channelIdToRemove)
-        subscribersToChannels.srem(subscriberId, channelIdToRemove)
-        "Channel removed"
-      case None => "You didn't have such channel"
-    }
-  }
-
-  def AllCommands: String =
-    "/add channel_link - add channel_link to your subscribes" + "\n\n" +
-      "/delete channel_link - delete channel_name from your subscribes" + "\n\n" +
-      "/delete all - delete all subscribes" + "\n\n" +
-      "/show - show all subscribes"
-
-  override def getBotUsername: String = "GreatNews"
-
-  override def getBotToken: String =
-    "823708273:AAEsJrfv8U8kgw3zrM8izOCal_ybaMjGfNw"
 
   def ChannelsByPass(): Unit = {
     val channels = channelsToSubscribers.keys()
@@ -153,5 +92,9 @@ class Bot extends TelegramLongPollingBot {
     }
     Thread.sleep(3000)
   }
+
+  override def getBotUsername: String = config.userName
+
+  override def getBotToken: String = config.token
 
 }
