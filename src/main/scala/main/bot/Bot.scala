@@ -1,9 +1,8 @@
 package main.bot
 
-import com.redis.RedisClient
 import com.typesafe.scalalogging.Logger
+import main.storage.Storage
 import main.tdapi.TgApi
-import org.drinkless.tdlib.TdApi.MessageText
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.{Message, Update}
 import params._
@@ -12,11 +11,7 @@ import regex._
 class Bot extends BotHelper {
 
   val logger: Logger = Logger("Command handler")
-
-  //  docker run -p:6379:6379 redis
-  val channelsToSubscribers = new RedisClient(config.channelsToSubscribers.host, config.channelsToSubscribers.port)
-  //  docker run -p:6380:6379 redis
-  val subscribersToChannels = new RedisClient(config.subscribersToChannels.host, config.channelsToSubscribers.port)
+  val storage: Storage = Storage()
 
   override def onUpdateReceived(update: Update): Unit = {
     logger.info(
@@ -39,7 +34,7 @@ class Bot extends BotHelper {
 
         case showSubscribes() =>
           message.setText(
-            "Your subscriptions" + "\n" + showSubscriptions(subscriberId)
+            "Your subscriptions:" + "\n\n" + showSubscriptions(subscriberId)
           )
         case slashInfo() =>
           message.setText(AllCommands)
@@ -51,28 +46,16 @@ class Bot extends BotHelper {
   }
 
   def ChannelsByPass(): Unit = {
-    val channels = channelsToSubscribers.keys()
+    val channels = storage.getEveryChannel
     if (channels.isDefined) {
       channels.get.foreach { chatId =>
         val chatName = TgApi.getChatInfoById(chatId.get.toLong).title
-        val subscribersIds =
-          channelsToSubscribers.lrange(chatId.getOrElse(""), 0, -1).get
+        val subscribersIds = storage.getChannelSubscribersIds(chatId)
         val lastViewedMessageId = subscribersIds.head.get.toLong
         val newMessages = getNewMessages(chatId.get.toLong, lastViewedMessageId)
         if (newMessages.messages.head.id != lastViewedMessageId) {
-          channelsToSubscribers.lset(
-            chatId.get,
-            0,
-            newMessages.messages.head.id
-          )
-          newMessages.messages
-            .dropRight(1)
-            .foreach { message =>
-              message.content match {
-                case content: MessageText =>
-                  redirectMessage(subscribersIds, chatName, content)
-              }
-            }
+          storage.updatedLastViewedMessage(chatId, 0, newMessages)
+          sendNewMessagesToSubscribers(newMessages, subscribersIds, chatName)
         }
       }
     }

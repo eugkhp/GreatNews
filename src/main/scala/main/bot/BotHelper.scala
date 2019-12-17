@@ -2,7 +2,7 @@ package main.bot
 
 import main.tdapi.TgApi
 import org.drinkless.tdlib.TdApi
-import org.drinkless.tdlib.TdApi.{Chat, MessageText}
+import org.drinkless.tdlib.TdApi.{Chat, MessageText, Messages}
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Message
@@ -14,7 +14,8 @@ trait BotHelper extends TelegramLongPollingBot {
     if (config.channelsToSubscribers.exists(channel.id)) {
       config.channelsToSubscribers.rpush(channel.id, subscriberId)
     } else {
-      config.channelsToSubscribers.rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
+      config.channelsToSubscribers
+        .rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
       config.channelsToSubscribers.rpush(channel.id, subscriberId)
     }
     config.subscribersToChannels.sadd(subscriberId, channel.id)
@@ -37,7 +38,6 @@ trait BotHelper extends TelegramLongPollingBot {
     answer.toString()
   }
 
-
   def deleteChannel(channelIdToRemove: Long, subscriberId: Long): String = {
     config.channelsToSubscribers.lrem(channelIdToRemove, -1, subscriberId) match {
       case Some(0) => "You didn't have such channel"
@@ -53,11 +53,29 @@ trait BotHelper extends TelegramLongPollingBot {
   def getNewMessages(chatId: Long, lastViewedMessageId: Long): TdApi.Messages =
     TgApi.getLastMessagesOfChannel(chatId, lastViewedMessageId, -99, 99)
 
+  def sendNewMessagesToSubscribers(newMessages: Messages,
+                                   subscribersIds: Seq[Option[String]],
+                                   chatName: String): Unit = {
+    newMessages.messages
+      .dropRight(1) //removed lastViewedMessage
+      .foreach { message =>
+        message.content match {
+          case content: MessageText =>
+            redirectMessage(subscribersIds, chatName, content)
+        }
+      }
+  }
 
-  def redirectMessage(subscribersIds: Seq[Option[String]], chatName: String, messageContent: MessageText): Unit = {
+  def redirectMessage(subscribersIds: Seq[Option[String]],
+                      chatName: String,
+                      messageContent: MessageText): Unit = {
     val redirectedMessage = new SendMessage()
     redirectedMessage.enableHtml(true)
-    redirectedMessage.setText("<strong>" + chatName + "</strong>\n" + messageContent.text.text)
+    redirectedMessage.setText(
+      "<strong>" + chatName + "</strong>\n" + messageContent.text.text
+    )
+
+    // removed first elem because it's lastMessageId not subscriberId
     subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
       val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
       redirectedMessage.setChatId(chatIdToRedirect)
@@ -65,12 +83,10 @@ trait BotHelper extends TelegramLongPollingBot {
     }
   }
 
-
   def AllCommands: String =
     "/add channel_link - add channel_link to your subscribes" + "\n\n" +
       "/delete channel_link - delete channel_name from your subscribes" + "\n\n" +
       "/delete all - delete all subscribes" + "\n\n" +
       "/show - show all subscribes"
-
 
 }
