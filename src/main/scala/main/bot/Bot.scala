@@ -56,6 +56,7 @@ class Bot extends TelegramLongPollingBot
     val channels = channelsToSubscribers.keys()
     if (channels.isDefined) {
       channels.get.foreach { chatId =>
+        val chatName = TgApi.getChatInfoById(chatId.get.toLong).title
         val subscribersIds =
           channelsToSubscribers.lrange(chatId.getOrElse(""), 0, -1).get
         val lastViewedMessageId = subscribersIds.head.get.toLong
@@ -78,7 +79,7 @@ class Bot extends TelegramLongPollingBot
               message.content match {
                 case content: MessageText =>
                   val RedirectedMessage = new SendMessage()
-                  RedirectedMessage.setText(content.text.text)
+                  RedirectedMessage.setText(chatName + "\n" + content.text.text)
                   subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
                     val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
                     RedirectedMessage.setChatId(chatIdToRedirect)
