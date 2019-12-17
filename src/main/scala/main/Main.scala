@@ -2,8 +2,6 @@ package main
 
 import com.typesafe.scalalogging.Logger
 import main.bot.Bot
-import main.tdapi.TgApi
-import org.drinkless.tdlib.TdApi
 import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException
@@ -16,13 +14,13 @@ object Main extends App {
 
   val logger = Logger("Main")
 
-  //example of usage
-  private val chat: TdApi.Chat = TgApi.findChannelByName("vas3k_channel")
-  private val id: Long = chat.id
-  println(id)
-  private val messages: TdApi.Messages =
-    TgApi.getLastMessagesOfChannel(-1001432529613L, 0, 0, 99)
-  println(messages.totalCount)
+  //  //example of usage
+  //  private val chat: TdApi.Chat = TgApi.findChannelByName("vas3k_channel")
+  //  private val id: Long = chat.id
+  //  println(id)
+  //  private val messages: TdApi.Messages =
+  //    TgApi.getLastMessagesOfChannel(-1001432529613L, 0, 0, 99)
+  //  println(messages.totalCount)
 
   ApiContextInitializer.init()
   val bot = new Bot()
