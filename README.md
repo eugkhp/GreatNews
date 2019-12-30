@@ -1,5 +1,7 @@
 # GreatNews
 
-Телеграмм бот, который можно пригласить в созданный чат и указать каналы из которых пересылать посты.
-Таким образом можно сделать чат со всеми каналами на которые хочет быть подписан человек(обычная лента), а также можно делаить каналы по темам, создавая разные чаты и приглашать туда бота. 
+Telegram bot for subscribing to channels in a single chat. 
+Uses telegram bot api for communicating with user and also telegram client api(tdlib) for getting access to channels.
+
+ 
 
