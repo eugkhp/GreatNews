@@ -49,8 +49,8 @@ object TgLogin {
         parameters.databaseDirectory = "tdlib"
         parameters.useMessageDatabase = true
         parameters.useSecretChats = true
-        parameters.apiId = 1157399
-        parameters.apiHash = "50563ed845128e3e34c2d01f3a9ffc86"
+        parameters.apiId = ???
+        parameters.apiHash = ???
         parameters.systemLanguageCode = "en"
         parameters.deviceModel = "Desktop"
         parameters.systemVersion = "19.04"
