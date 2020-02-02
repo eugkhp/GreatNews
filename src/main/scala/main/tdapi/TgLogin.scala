@@ -6,6 +6,9 @@ import java.util.concurrent.locks.{Condition, Lock, ReentrantLock}
 import com.typesafe.scalalogging.Logger
 import org.drinkless.tdlib.{Client, TdApi}
 
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Promise}
+
 object TgLogin {
 
   val logger: Logger = Logger("Login")
@@ -30,17 +33,18 @@ object TgLogin {
       throw new IOError(
         new IOException("Write access to the current directory is required")
       )
+    val updatesHandler = new Handlers.UpdatesHandler
     client = Client.create(
-      new Handlers.UpdatesHandler,
+      updatesHandler,
       new Handlers.PrintHandler,
       new Handlers.PrintHandler
     )
+    Await.result(updatesHandler.eventualAuth, 5 seconds)
     client
   }
 
-  def onAuthorizationStateUpdated(
-    authorizationState: TdApi.AuthorizationState
-  ): Unit = {
+  def onAuthorizationStateUpdated(authorizationState: TdApi.AuthorizationState,
+                                  authStatus: Promise[Boolean]): Unit = {
     if (authorizationState != null)
       TgLogin.authorizationState = authorizationState
     TgLogin.authorizationState.getConstructor match {
@@ -100,7 +104,10 @@ object TgLogin {
         haveAuthorization = true
         authorizationLock.lock()
         try gotAuthorization.signal()
-        finally authorizationLock.unlock()
+        finally {
+          authorizationLock.unlock()
+          authStatus.success(haveAuthorization)
+        }
 
       case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR =>
         haveAuthorization = false

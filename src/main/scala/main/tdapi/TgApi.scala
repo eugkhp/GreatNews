@@ -1,7 +1,8 @@
 package main.tdapi
-
 import org.drinkless.tdlib.TdApi.{Chat, Messages}
 import org.drinkless.tdlib.{Client, TdApi}
+
+import scala.concurrent.Future
 
 object TgApi {
 
@@ -12,16 +13,15 @@ object TgApi {
       e.printStackTrace()
   }
 
-  var client: Client = {
-    val c = TgLogin.init()
-    Thread.sleep(2000) // waiting for client authorization
-    c
+  var client: Client = _
+  def initClient(): Unit = {
+    client = TgLogin.init()
   }
 
-  def findChannelByName(channelName: String): Chat = {
+  def findChannelByName(channelName: String): Future[Chat] = {
     val handler = new Handlers.DefaultHandler[Chat]
     client.send(new TdApi.SearchPublicChat(channelName), handler)
-    handler.getResponse
+    handler.eventualResponse
   }
 
   /**
@@ -39,22 +39,22 @@ object TgApi {
   def getLastMessagesOfChannel(channelId: Long,
                                fromMessageId: Long,
                                offset: Int,
-                               count: Int): Messages = {
+                               count: Int): Future[Messages] = {
     val handler = new Handlers.DefaultHandler[Messages]
     client.send(
       new TdApi.GetChatHistory(channelId, fromMessageId, offset, count, false),
       handler
     )
-    handler.getResponse
+    handler.eventualResponse
   }
 
-  def getChatInfoById(chatId: Long): Chat = {
+  def getChatInfoById(chatId: Long): Future[Chat] = {
     val handler = new Handlers.DefaultHandler[Chat]
     client.send(new TdApi.GetChat(chatId), handler)
-    handler.getResponse
+    handler.eventualResponse
   }
 
-  def getMessageById(channelId: Long, messageId: Long): Messages = {
-    getLastMessagesOfChannel(channelId, messageId, 0 ,1)
+  def getMessageById(channelId: Long, messageId: Long): Future[Messages] = {
+    getLastMessagesOfChannel(channelId, messageId, 0, 1)
   }
 }

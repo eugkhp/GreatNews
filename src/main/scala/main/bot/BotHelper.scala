@@ -8,17 +8,25 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Message
 import params._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
 trait BotHelper extends TelegramLongPollingBot {
 
-  def addSubscription(channel: Chat, subscriberId: Long): Unit = {
-    if (config.channelsToSubscribers.exists(channel.id)) {
-      config.channelsToSubscribers.rpush(channel.id, subscriberId)
-    } else {
-      config.channelsToSubscribers
-        .rpush(channel.id, channel.lastMessage.id) // first elem is lastMessageId
-      config.channelsToSubscribers.rpush(channel.id, subscriberId)
+  def addSubscription(channel: Future[Chat], subscriberId: Long): Unit = {
+    channel.onComplete {
+      case Success(value) =>
+        if (config.channelsToSubscribers.exists(value.id)) {
+          config.channelsToSubscribers.rpush(value.id, subscriberId)
+        } else {
+          config.channelsToSubscribers
+            .rpush(value.id, value.lastMessage.id) // lastMessageId is first elem
+          config.channelsToSubscribers.rpush(value.id, subscriberId)
+        }
+        config.subscribersToChannels.sadd(subscriberId, value.id)
+      case Failure(exception) => throw exception
     }
-    config.subscribersToChannels.sadd(subscriberId, channel.id)
   }
 
   def showSubscriptions(subscriberId: Long): String = {
@@ -28,7 +36,8 @@ trait BotHelper extends TelegramLongPollingBot {
         set.foreach(v => {
           v.map(_.toLong) match {
             case Some(id) =>
-              answer.appendAll(TgApi.getChatInfoById(id).title + "\n")
+              val eventualChat = TgApi.getChatInfoById(id)
+              answer.appendAll(eventualChat + "\n")
           }
         })
       case None =>
@@ -38,35 +47,25 @@ trait BotHelper extends TelegramLongPollingBot {
     answer.toString()
   }
 
-  def deleteChannel(channelIdToRemove: Long, subscriberId: Long): String = {
-    config.channelsToSubscribers.lrem(channelIdToRemove, -1, subscriberId) match {
-      case Some(0) => "You didn't have such channel"
-      case Some(_) =>
-        if (config.channelsToSubscribers.llen(channelIdToRemove).get == 1)
-          config.channelsToSubscribers.lpop(channelIdToRemove)
-        config.subscribersToChannels.srem(subscriberId, channelIdToRemove)
-        "Channel removed"
-      case None => "You didn't have such channel"
-    }
-  }
-
-  def getNewMessages(chatId: Long, lastViewedMessageId: Long): TdApi.Messages =
+  def getNewMessages(chatId: Long,
+                     lastViewedMessageId: Long): Future[TdApi.Messages] =
     TgApi.getLastMessagesOfChannel(chatId, lastViewedMessageId, -99, 99)
 
   def sendNewMessagesToSubscribers(newMessages: Messages,
-                                   subscribersIds: Seq[Option[String]],
-                                   chatName: String): Unit = {
+                                   subscribersIds: Seq[String],
+                                   chat: TdApi.Chat): Unit = {
+
     newMessages.messages
       .dropRight(1) //removed lastViewedMessage
       .foreach { message =>
         message.content match {
           case content: MessageText =>
-            redirectMessage(subscribersIds, chatName, content)
+            redirectMessage(subscribersIds, chat.title, content)
         }
       }
   }
 
-  def redirectMessage(subscribersIds: Seq[Option[String]],
+  def redirectMessage(subscribersIds: Seq[String],
                       chatName: String,
                       messageContent: MessageText): Unit = {
     val redirectedMessage = new SendMessage()
@@ -77,7 +76,7 @@ trait BotHelper extends TelegramLongPollingBot {
 
     // removed first elem because it's lastMessageId not subscriberId
     subscribersIds.drop(1).foreach { chatIdToRedirectOpt =>
-      val chatIdToRedirect = chatIdToRedirectOpt.get.toLong
+      val chatIdToRedirect = chatIdToRedirectOpt.toLong
       redirectedMessage.setChatId(chatIdToRedirect)
       execute[Message, SendMessage](redirectedMessage)
     }

@@ -1,41 +1,39 @@
 package main.tdapi
 
-import cats.effect.{ContextShift, IO}
 import com.typesafe.scalalogging.Logger
 import main.tdapi.TgLogin.onAuthorizationStateUpdated
 import org.drinkless.tdlib.{Client, TdApi}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, Promise}
 
 object Handlers {
 
   val logger: Logger = Logger("Handlers")
-  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
   class DefaultHandler[A] extends Client.ResultHandler {
-    @volatile
-    var response: A = _
+
+    private val response: Promise[A] = Promise[A]()
 
     override def onResult(obj: TdApi.Object): Unit = {
-      //println(obj) for debug
       obj match {
-        case obj: A => response = obj
+        case obj: A => response.success(obj)
         case _      => logger.error("Wrong expected type")
       }
     }
+    def eventualResponse: Future[A] = response.future
 
-    def getResponse: A = {
-      while (response == null) {}
-      response
-    }
   }
 
   class AuthorizationRequestHandler extends Client.ResultHandler {
+
+    val authStatus: Promise[Boolean] = Promise()
+    def eventualAuth: Future[Boolean] = authStatus.future
+
     override def onResult(obj: TdApi.Object): Unit = {
       obj.getConstructor match {
         case TdApi.Error.CONSTRUCTOR =>
           logger.error("Receive an error:" + "\n" + obj)
-          onAuthorizationStateUpdated(null) // repeat last action
+          onAuthorizationStateUpdated(null, authStatus) // repeat last action
 
         case TdApi.Ok.CONSTRUCTOR =>
         // result is already received through UpdateAuthorizationState, nothing to do
@@ -47,13 +45,18 @@ object Handlers {
   }
 
   class UpdatesHandler extends Client.ResultHandler {
+
+    val authStatus: Promise[Boolean] = Promise()
+    def eventualAuth: Future[Boolean] = authStatus.future
+
     override def onResult(obj: TdApi.Object): Unit = {
       obj.getConstructor match {
         case TdApi.UpdateAuthorizationState.CONSTRUCTOR =>
           onAuthorizationStateUpdated(
             obj
               .asInstanceOf[TdApi.UpdateAuthorizationState]
-              .authorizationState
+              .authorizationState,
+            authStatus
           )
         case _ =>
         //print("Unsupported update:" + "\n" + obj);

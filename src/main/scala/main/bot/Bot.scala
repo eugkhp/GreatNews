@@ -8,6 +8,9 @@ import org.telegram.telegrambots.meta.api.objects.{Message, Update}
 import params._
 import regex._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
+
 class Bot extends BotHelper {
 
   val logger: Logger = Logger("Command handler")
@@ -23,21 +26,25 @@ class Bot extends BotHelper {
       val subscriberId = update.getMessage.getChatId // id of the chat to respond
       message.setChatId(subscriberId)
       update.getMessage.getText match {
-        case addSubscribe(some_channel) =>
+        case addSubscribeCommand(some_channel) =>
           val channel = TgApi.findChannelByName(some_channel)
           addSubscription(channel, subscriberId)
           message.setText(s"You added $some_channel to your subscriptions")
 
-        case deleteSubscribe(some_channel) =>
-          deleteChannel(TgApi.findChannelByName(some_channel).id, subscriberId)
-          message.setText(s"You deleted $some_channel from your subscriptions")
+        case deleteChannelCommand(some_channel) =>
+          val channel = TgApi.findChannelByName(some_channel)
+          storage.deleteChannel(channel, subscriberId).andThen {
+            case Success(res)       => message.setText("deleted")
+            case Failure(exception) => logger.error(exception.getMessage)
+          }
 
-        case showSubscribes() =>
+        case showSubscribesCommand() =>
           message.setText(
             "Your subscriptions:" + "\n\n" + showSubscriptions(subscriberId)
           )
-        case slashInfo() =>
+        case infoCommand() =>
           message.setText(AllCommands)
+
         case _ =>
           message.setText("Unknown command")
       }
@@ -47,19 +54,25 @@ class Bot extends BotHelper {
 
   def ChannelsByPass(): Unit = {
     val channels = storage.getEveryChannel
-    if (channels.isDefined) {
-      channels.get.foreach { chatId =>
-        val chatName = TgApi.getChatInfoById(chatId.get.toLong).title
-        val subscribersIds = storage.getChannelSubscribersIds(chatId)
-        val lastViewedMessageId = subscribersIds.head.get.toLong
-        val newMessages = getNewMessages(chatId.get.toLong, lastViewedMessageId)
-        if (newMessages.messages.head.id != lastViewedMessageId) {
-          storage.updatedLastViewedMessage(chatId, 0, newMessages)
-          sendNewMessagesToSubscribers(newMessages, subscribersIds, chatName)
-        }
+    channels.foreach { channelId =>
+      val eventualChat = TgApi.getChatInfoById(channelId.toLong)
+      val subscribersIds = storage.getChannelSubscribersIds(channelId)
+      val lastViewedMessageId = subscribersIds.head
+      val eventualMessages =
+        getNewMessages(channelId.toLong, lastViewedMessageId.toLong)
+
+      val eventualTuple = for {
+        chat <- eventualChat
+        newMessages <- eventualMessages
+        if newMessages.messages.head.id != lastViewedMessageId.toLong
+      } yield (chat, newMessages)
+      eventualTuple.onComplete {
+        case Failure(exception) => throw exception
+        case Success((chat, newMessages)) =>
+          storage.updatedLastViewedMessage(channelId, 0, newMessages)
+          sendNewMessagesToSubscribers(newMessages, subscribersIds, chat)
       }
     }
-    Thread.sleep(3000)
   }
 
   override def getBotUsername: String = config.userName
